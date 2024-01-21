@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8"/>
+	<title>Фигури</title>
+	<script
+		src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.54.0/phaser.min.js"
+		integrity="sha512-YqRmKh0nuu1Pli0dI6DhTK/iDk/FwyaSaqrB0wLVvYcO2vvrPx84GRoNFAnebhm0JF25FQLixNoeCNZF8M6SEg=="
+		crossorigin="anonymous"></script>
+	<style type="text/css">
+		body {
+			margin: 0;
+			padding: 10px;
+			text-align: center;
+		}
+	</style>
+</head>
+<body>
+
+</body>
+</html>
+<script type="text/javascript">
+var config = {
+	type: Phaser.AUTO,
+	width: 800,
+	height: 600,
+	backgroundColor: '#000000',
+	physics: {
+		default: 'arcade'
+	},
+	scene: {
+		preload,
+		create,
+		update
+	}
+};
+
+var bodovi = 0, kraj = false;
+var nizazaproverka = [], slikisorabovi = {};
+var text_vremetoistece, text_preostanatovreme;
+var pozadina, vremezaigra = 30;
+var text_naslov, text_bodovi, poraka, zvuk1, zvuk2;
+
+var game = new Phaser.Game(config);
+
+function preload() {
+	this.load.image('pozadina', 'dodatno/pozadina.png');
+	this.load.image('1', 'dodatno/figuri/shape1.png');
+	this.load.image('2', 'dodatno/figuri/shape2.png');
+	this.load.image('3', 'dodatno/figuri/shape3.png');
+	this.load.image('4', 'dodatno/figuri/shape4.png');
+	this.load.image('5', 'dodatno/figuri/shape5.png');
+	this.load.image('6', 'dodatno/figuri/shape6.png');
+	this.load.image('7', 'dodatno/figuri/shape7.png');
+	this.load.image('8', 'dodatno/figuri/shape8.png');
+	this.load.image('border1', 'dodatno/figuri/border/shape1.png');
+	this.load.image('border2', 'dodatno/figuri/border/shape2.png');
+	this.load.image('border3', 'dodatno/figuri/border/shape3.png');
+	this.load.image('border4', 'dodatno/figuri/border/shape4.png');
+	this.load.image('border5', 'dodatno/figuri/border/shape5.png');
+	this.load.image('border6', 'dodatno/figuri/border/shape6.png');
+	this.load.image('border7', 'dodatno/figuri/border/shape7.png');
+	this.load.image('border8', 'dodatno/figuri/border/shape8.png');
+	
+	this.load.audio('zvukZaNetocno', 'dodatno/ne.mp3');
+	this.load.audio('zvukZaTocno', 'dodatno/da.mp3');
+	
+	this.load.image('2_6', 'dodatno/ans/ans1.png');
+	this.load.image('3_5', 'dodatno/ans/ans2.png');
+	this.load.image('1_7', 'dodatno/ans/ans3.png');
+	this.load.image('4_8', 'dodatno/ans/ans4.png');
+	this.load.image('3_6', 'dodatno/ans/ans5.png');
+	this.load.image('6_7', 'dodatno/ans/ans6.png');
+	this.load.image('4_5', 'dodatno/ans/ans7.png');
+	this.load.image('1_2', 'dodatno/ans/ans8.png');
+	this.load.image('2_3', 'dodatno/ans/ans9.png');
+	this.load.image('5_6', 'dodatno/ans/ans10.png');
+	this.load.image('2_8', 'dodatno/ans/ans11.png');
+	this.load.image('2_5', 'dodatno/ans/ans12.png');
+	this.load.image('3_4', 'dodatno/ans/ans13.png');
+	this.load.image('1_4', 'dodatno/ans/ans14.png');
+	this.load.image('5_7', 'dodatno/ans/ans15.png');
+}
+
+
+
+function create() {
+	pozadina = this.add.image(400, 300, 'pozadina');
+	
+	text_naslov = this.add.text(340, 25, 'Фигури');
+	text_naslov.setColor('#ffe889');
+	text_naslov.setFontSize('36px');
+	
+	poraka = this.add.text(160, 480, 'Најди ги фигурите кои ја прават фигурата погоре');
+	poraka.setColor('#3771ff');
+	poraka.setFontSize('20px');
+	
+	text_vremetoistece = this.add.text(280, 550, null);
+	text_vremetoistece.setColor('#3771ff');
+	text_vremetoistece.setFontSize('20px');
+	
+	text_preostanatovreme = this.add.text(600, 355, null);
+	text_preostanatovreme.setColor('#3771ff');
+	text_preostanatovreme.setFontSize('20px');
+	
+	text_bodovi = this.add.text(100, 355, 'Точни одговори: ' + bodovi);
+	text_bodovi.setColor('#3771ff');
+	text_bodovi.setFontSize('20px');
+	
+	var krajnaigrata = () => {
+		kraj = true;
+		
+		text_vremetoistece.setText('Time\'s up! Точни одговори: ' + bodovi);
+	}
+	
+	playTimer = this.time.addEvent({
+	   delay: 30000,
+	   callback: krajnaigrata,
+	   callbackScope: this
+   });
+	
+	zvuk1 = this.sound.add('zvukZaTocno');
+	zvuk2 = this.sound.add('zvukZaNetocno');
+	
+	var pocetok = () => {
+		var loadirajmozniodgovori = () => {
+			var odg1 = this.add.image(170, 130, '1').setInteractive();
+			odg1.ime = '1';
+			odg1.on('pointerdown', dalietocno);
+			
+			var odg2 = this.add.image(320, 250, '2').setInteractive();
+			odg2.ime = '2';
+			odg2.on('pointerdown', dalietocno);
+			
+			var odg3 = this.add.image(470, 250, '3').setInteractive();
+			odg3.ime = '3';
+			odg3.on('pointerdown', dalietocno);
+			
+			var odg4 = this.add.image(620, 250, '4').setInteractive();
+			odg4.ime = '4';
+			odg4.on('pointerdown', dalietocno);
+			
+			var odg5 = this.add.image(170, 250, '5').setInteractive();
+			odg5.ime = '5';
+			odg5.on('pointerdown', dalietocno);
+			
+			var odg6 = this.add.image(320, 130, '6').setInteractive();
+			odg6.ime = '6';
+			odg6.on('pointerdown', dalietocno);
+			
+			var odg7 = this.add.image(470, 130, '7').setInteractive();
+			odg7.ime = '7';
+			odg7.on('pointerdown', dalietocno);
+			
+			var odg8 = this.add.image(620, 130, '8').setInteractive();
+			odg8.ime = '8';
+			odg8.on('pointerdown', dalietocno);
+		}
+		
+		loadirajmozniodgovori();
+		
+		var vidlivirabovi = () => {
+			for (var item in slikisorabovi) {
+				if (slikisorabovi[item]) {
+					slikisorabovi[item].setActive(true).setVisible(true);
+				}
+			}
+		};
+		
+		var nevidlivirabovi = () => {
+			for (var item in slikisorabovi) {
+				if (slikisorabovi[item]) {
+					slikisorabovi[item].setActive(false).setVisible(false);
+					slikisorabovi[item] = null;
+				}
+			}
+		};
+		
+		
+		var dodajborder = self => {
+			slikisorabovi['border' + self.ime] = this.add.image(self.x, self.y, 'border' + self.ime);
+			vidlivirabovi();
+		};
+		
+		function dalietocno() {
+			if (!kraj) {
+				const ovaime = this.ime;
+				
+				if (nizazaproverka.length < 2) {
+					if (!slikisorabovi['border' + ovaime]) {
+						dodajborder(this);
+					} else {
+						slikisorabovi['border' + ovaime].setActive(false).setVisible(false);
+						slikisorabovi['border' + ovaime] = null;
+						nizazaproverka.pop();
+						
+						return;
+					}
+					
+					nizazaproverka.push(ovaime);
+					
+					var join = nizazaproverka.join('_');
+					
+					if (nizazaproverka.length === 2) {
+						if (window[join] || window[nizazaproverka[1] + '_' + nizazaproverka[0]]) {
+							zvuk1.play();
+							bodovi += 1;
+						} else {
+							zvuk2.play();
+						}
+						text_bodovi.setText('Точни одговори: ' + bodovi);
+						
+						setTimeout(() => {
+							nizazaproverka = [];
+							postavizapogoduvanje();
+							nevidlivirabovi()
+						}, 200)
+					}
+				}
+			}
+		}
+	};
+	
+	var postavizapogoduvanje = () => {
+		var nizasotocniodgovori = [
+			'2_6',
+			'3_5',
+			'1_7',
+			'4_8',
+			'3_6',
+			'6_7',
+			'4_5',
+			'1_2',
+			'2_3',
+			'5_6',
+			'2_8',
+			'2_5',
+			'3_4',
+			'1_4',
+			'5_7',
+		];
+		var random = Math.floor(Math.random() * nizasotocniodgovori.length);
+		
+		var ime = nizasotocniodgovori[random];
+		var ans = this.add.image(400, 400, ime);
+		window[ime] = ans;
+	}
+	
+	pocetok();
+	
+	postavizapogoduvanje();
+	
+}
+
+function update() {
+	text_preostanatovreme.setText('Секунди: ' + ( vremezaigra - Math.round(playTimer.getElapsedSeconds()) ) + ' сек.');
+}
+
+
+</script>

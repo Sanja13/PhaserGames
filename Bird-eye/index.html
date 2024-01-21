@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8"/>
+	<title>Птичја Перспектива</title>
+	<script
+		src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.54.0/phaser.min.js"
+		integrity="sha512-YqRmKh0nuu1Pli0dI6DhTK/iDk/FwyaSaqrB0wLVvYcO2vvrPx84GRoNFAnebhm0JF25FQLixNoeCNZF8M6SEg=="
+		crossorigin="anonymous"></script>
+	<style type="text/css">
+		body {
+			margin: 0;
+			padding: 10px;
+			text-align: center;
+		}
+	</style>
+</head>
+<body>
+
+</body>
+</html>
+<script type="text/javascript">
+
+
+var config = {
+	type: Phaser.AUTO,
+	width: 800,
+	height: 600,
+	backgroundColor: '#000000',
+	physics: {
+		default: 'arcade'
+	},
+	scene: {
+		preload,
+		create,
+		update
+	}
+};
+
+var bg, pause_button, pausedGame, gameplayTime = 60, score = 0, gameOver = false, checkArray = [], minX = 150;
+var timesUpTxt, remainingTimeText, titleTxt, scoreTxt, messageTxt;
+var randomSideToGuess;
+var correctSound, wrongSound;
+
+var infoStyle = {
+	fontSize: '22px',
+	fontFamily: 'Arial',
+	color: '#00014e',
+	align: 'center'
+};
+var titleStyle = {
+	fontSize: '32px',
+	fontFamily: 'Arial',
+	color: '#fff',
+	align: 'center'
+};
+
+var game = new Phaser.Game(config);
+
+function preload() {
+	this.load.image('bg', 'assets/bg.png');
+	this.load.image('pause_button', 'assets/pause_button.png');
+	this.load.image('pause_screen', 'assets/pause_screen.png');
+	
+	// Лоадирање фигури со поглед од страна
+	for (var i = 0; i < 4; i++)
+		for (var j = 0; j < 4; j++)
+			this.load.image(( i + '_' + j ).toString() + '_side', 'assets/side/' + i + '_' + j + '.png');
+	
+	// Лоадирање фигури со поглед одозгора
+	for (var i = 0; i < 4; i++)
+		for (var j = 0; j < 4; j++)
+			this.load.image(( i + '_' + j ).toString() + '_top', 'assets/top/' + i + '_' + j + '.png');
+	
+	// Лоадирање звуци
+	this.load.audio('wrongAnswer', 'assets/wrong.mp3');
+	this.load.audio('correctAnswer', 'assets/correct.mp3');
+}
+
+function create() {
+
+	var generateRandom = () => {
+		var randomSide_1 = Math.floor(Math.random() * 4).toString();
+		var randomSide_2 = Math.floor(Math.random() * 4).toString();
+		return randomSide_1 + '_' + randomSide_2;
+	};
+	
+	
+	var generateSideView = () => {
+		randomSideToGuess = generateRandom();
+		
+		this.add.image(400, 250, randomSideToGuess + '_side').setInteractive();
+	};
+	
+	// Функција што генерира фигури од птичја перспектива
+	var generateTopView = () => {
+		// Иницијализирање на можните одговори (круговите)
+		var initCircles = () => {
+			for (var i = 0; i < 4; i++) {
+				window['top' + i] = undefined;
+				checkArray = [];
+				minX = 150;
+			}
+		};
+		
+		
+		var generateCircles = () => {
+			initCircles();
+			
+			for (var i = 0; i < 4; i++) {
+				var randomTop = generateRandom();
+				
+				window['top' + i] = this.add.image(minX, 400, randomTop + '_top').setInteractive();
+				window['top' + i].setScale(0.5);
+				window['top' + i].name = randomTop;
+				window['top' + i].on('pointerdown', checkCircle.bind(this, window['top' + i]));
+				minX += 165;
+				checkArray.push(randomTop);
+			}
+		};
+		
+		
+		var checkCircle = circle => {
+			function correct() {
+				correctSound.play();
+				score += 10;
+				scoreTxt.setText('Поени: ' + score);
+				
+				if (circle !== undefined)
+					for (var i = 0; i < 4; i++)
+						window['top' + i].destroy();
+			}
+			
+			function wrong() {
+				wrongSound.play();
+				score -= 20;
+				scoreTxt.setText('Поени: ' + score);
+			}
+			
+			
+			if (!gameOver) {
+				if (circle.name === randomSideToGuess) {
+					correct();
+					checkArray = [];
+					generateSideView();
+					generateTopView();
+				} else {
+					wrong();
+				}
+			}
+		};
+		
+		// Функција кога проверува дали има дупликати во одредена низа.
+		var hasDuplicates = arr => {
+			return ( new Set(arr) ).size !== arr.length;
+		};
+		
+	
+		 
+		do generateCircles();
+		while (!checkArray.includes(randomSideToGuess) || hasDuplicates(checkArray));
+	};
+	
+	var pauseGame = () => {
+		if (!gameOver) {
+			pausedGame = this.add.image(400, 300, 'pause_screen').setInteractive();
+			pausedGame.on('pointerdown', resumeGame);
+			playTimer.paused = true;
+		}
+	};
+	
+	var resumeGame = () => {
+		pausedGame.destroy();
+		playTimer.paused = false;
+	};
+	
+	var setGameOver = () => {
+		gameOver = true;
+		
+		timesUpTxt.setText('Времето ви истече. Поени: ' + score + '      Играјте повторно!');
+		timesUpTxt.on('pointerdown', () => {
+			location.reload();
+		})
+	};
+	
+	bg = this.add.image(400, 300, 'bg');
+	
+	pause_button = this.add.image(40, 40, 'pause_button').setInteractive();
+	pause_button.on('pointerdown', pauseGame);
+	
+	generateSideView();
+	
+	// Генерирање можни одговори
+	generateTopView();
+	
+
+	correctSound = this.sound.add('correctAnswer');
+	wrongSound = this.sound.add('wrongAnswer');
+	
+	titleTxt = this.add.text(260, 25, 'Птичја Перспектива!', titleStyle);
+	
+	messageTxt = this.add.text(160, 100, 'Погоди ја фигурата од птичја перспектива!', infoStyle);
+	
+	timesUpTxt = this.add.text(160, 485, null, infoStyle).setInteractive();
+
+	remainingTimeText = this.add.text(600, 555, null, infoStyle);
+	
+	scoreTxt = this.add.text(100, 555, ' Поени: ' + score, infoStyle);
+	
+	// тајмер
+	playTimer = this.time.addEvent({
+		delay: 60000,
+		callback: setGameOver,
+		callbackScope: this
+	});
+}
+
+function update() {
+	// преостанато време
+	remainingTimeText.setText('Време: ' + ( gameplayTime - Math.round(playTimer.getElapsedSeconds()) ) + ' сек.');
+}
+
+
+</script>
